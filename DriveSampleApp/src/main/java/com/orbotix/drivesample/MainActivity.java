@@ -162,8 +162,9 @@ public class MainActivity extends Activity implements RobotPickerDialog.RobotPic
 
                 //// 변경 필요하면 넣으면 됨.
                 DecimalFormat decimalFormat = new DecimalFormat(pattern);      //정수만 출력되게 형 변환.
-                highHz = highHz/10;
-                _connectedRobot.drive((float)highHz,0 );
+                //highHz = highHz/10;
+                //_connectedRobot.drive((float)highHz,0 );
+                _connectedRobot.stop();
                 highHz=0;      // high Hz를 초기화 함.
 
             }
