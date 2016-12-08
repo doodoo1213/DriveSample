@@ -6,6 +6,8 @@ import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -99,7 +101,7 @@ public class MainActivity extends Activity implements RobotPickerDialog.RobotPic
     private static final int SAMPLE_DELAY = 75;
 
     Button BtStartStop;
-    TextView txtHighHz;
+
     boolean isStarted = false;
 
     double highHz = 0;
@@ -110,7 +112,6 @@ public class MainActivity extends Activity implements RobotPickerDialog.RobotPic
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
         BtStartStop = (Button)findViewById(R.id.BtStartStop);
-        txtHighHz = (TextView)findViewById(R.id.txtHighHz);
 
         BtStartStop.setOnClickListener(this);
 
@@ -161,8 +162,10 @@ public class MainActivity extends Activity implements RobotPickerDialog.RobotPic
 
                 //// 변경 필요하면 넣으면 됨.
                 DecimalFormat decimalFormat = new DecimalFormat(pattern);      //정수만 출력되게 형 변환.
-                txtHighHz.setText("high : "+decimalFormat.format(highHz));
+                highHz = highHz/10;
+                _connectedRobot.drive((float)highHz,0 );
                 highHz=0;      // high Hz를 초기화 함.
+
             }
         } catch (Exception e) {e.printStackTrace();}
     }
@@ -176,7 +179,6 @@ public class MainActivity extends Activity implements RobotPickerDialog.RobotPic
                 AudioFormat.ENCODING_PCM_16BIT, bufferSize);
 
         audio.startRecording();
-        audio.startRecording();
         thread = new Thread(new Runnable() {
             public void run() {
                 while(thread != null && !thread.isInterrupted()){
@@ -189,6 +191,8 @@ public class MainActivity extends Activity implements RobotPickerDialog.RobotPic
                         public void run() {
                             if(highHz < lastLevel) {    // 최대값 변경 하는 코드
                                 highHz = lastLevel;
+                                float high = (float)(highHz/1000);
+                                _connectedRobot.drive((float) 0, high);
                             }
                         }
                     });
@@ -409,10 +413,8 @@ public class MainActivity extends Activity implements RobotPickerDialog.RobotPic
                 // Here you can use the joystick input to drive the connected robot. You can easily do this with the
                 // ConvenienceRobot#drive() method
                 // Note that the arguments do flip here from the order of parameters
-                Log.e("eeee",""+(float)(highHz/10));
-                Log.e("eeee",""+(float)(distanceFromCenter));
 
-                _connectedRobot.drive(0, (float)(highHz/10));
+                _connectedRobot.drive((float)distanceFromCenter, (float) angle);
             }
 
             /**
@@ -576,6 +578,14 @@ public class MainActivity extends Activity implements RobotPickerDialog.RobotPic
                     isStarted = true;
                 }
                 break;
+
+               /* new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+       //                 _connectedRobot.stop();
+                    }
+                },3000);*/
+
         }
     }
 }
