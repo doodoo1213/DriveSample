@@ -20,6 +20,7 @@ import android.widget.TextView;
 import com.orbotix.ConvenienceRobot;
 import com.orbotix.Ollie;
 import com.orbotix.Sphero;
+import com.orbotix.async.CollisionDetectedAsyncData;
 import com.orbotix.calibration.api.CalibrationEventListener;
 import com.orbotix.calibration.api.CalibrationImageButtonView;
 import com.orbotix.calibration.api.CalibrationView;
@@ -101,8 +102,10 @@ public class MainActivity extends Activity implements RobotPickerDialog.RobotPic
     private static final int SAMPLE_DELAY = 75;
 
     Button BtStartStop;
+    Button BtReset;
 
     boolean isStarted = false;
+    boolean isReset=false;
 
     double highHz = 0;
     String pattern = "#####";
@@ -112,8 +115,10 @@ public class MainActivity extends Activity implements RobotPickerDialog.RobotPic
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
         BtStartStop = (Button)findViewById(R.id.BtStartStop);
-
         BtStartStop.setOnClickListener(this);
+
+        BtReset = (Button)findViewById(R.id.BtReset);
+        BtReset.setOnClickListener(this);
 
         initBufferSize();
 
@@ -171,6 +176,37 @@ public class MainActivity extends Activity implements RobotPickerDialog.RobotPic
         } catch (Exception e) {e.printStackTrace();}
     }
 
+    private void stop(){
+        thread.interrupt();
+        thread=null;
+        try{
+            _connectedRobot.stop();
+        } catch (Exception e){e.printStackTrace();}
+    }
+
+    private void reset() {
+        audio = new AudioRecord(MediaRecorder.AudioSource.MIC, sampleRate,
+                AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT, bufferSize);
+
+        audio.stop();
+        thread = new Thread(new Runnable() {
+            public void run() {
+                while (thread != null && !thread.isInterrupted()) {
+                    //Let's make the thread sleep for a the approximate sampling time
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            _connectedRobot.drive((float) 180, 20);
+                        }
+
+                    });
+                }
+            }
+        });
+        thread.start();
+    }
+
     /**
      * Audio 인식하는 메소드
      */
@@ -192,10 +228,11 @@ public class MainActivity extends Activity implements RobotPickerDialog.RobotPic
                         public void run() {
                             if(highHz < lastLevel) {    // 최대값 변경 하는 코드
                                 highHz = lastLevel;
-                                float high = (float)(highHz/1000);
+                                float high = (float) (highHz / 1000);
                                 _connectedRobot.drive((float) 0, high);
                             }
                         }
+
                     });
                 }
             }
@@ -577,6 +614,18 @@ public class MainActivity extends Activity implements RobotPickerDialog.RobotPic
                     BtStartStop.setText("Stop");
                     audioStart();    // Audio 시작함.
                     isStarted = true;
+                }
+                break;
+
+            case R.id.BtReset:
+                if(isReset) {
+                    BtReset.setText("Reset");
+                    stop();
+                    isReset = false;
+                } else {
+                    BtReset.setText("Stop");
+                    reset();
+                    isReset = true;
                 }
                 break;
 
